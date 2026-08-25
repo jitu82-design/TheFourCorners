@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A four-quadrant to-do list. Your tasks never leave your browser.">
 <title>The Four Corners</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600;1,9..144,700&family=Inter:wght@400..700&family=Space+Grotesk:wght@500;600;700&display=swap">
@@ -296,7 +297,6 @@
   "use strict";
   var QUADS=[{k:"family",name:"Family"},{k:"personal",name:"Personal"},
              {k:"work",name:"Work"},{k:"dj",name:"DJ / Businesses"}];
-  var STATE_RE=/<script type="application\/json" id="state">[\s\S]*?<\/script>/;
 
   /* ---------- state ---------- */
   var state;
@@ -310,14 +310,7 @@
   if(!state.names||typeof state.names!=="object") state.names={};
   if(state.sortMode!=="manual") state.sortMode="deadline";
 
-  var readOnly=false, saveTimer=null, retried=false;
-  var capReady=(function(){
-    try{
-      if(window.claude && typeof window.claude.use==="function")
-        return window.claude.use("artifact").catch(function(){return null;});
-    }catch(e){}
-    return Promise.resolve(null);
-  })();
+  var readOnly=false, saveTimer=null;
 
   function uid(){ return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():("t"+Date.now()+Math.random().toString(36).slice(2,8)); }
   function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -568,8 +561,9 @@
   /* ---------- saving ---------- */
   function setStatus(s){
     var el=document.getElementById("saveState");
-    el.textContent = s==="saving"?"Saving…" : s==="saved"?"Saved ✓"
-      : s==="local"?"Saved on this device" : s==="ro"?"Read-only" : "";
+    el.textContent = s==="saving"?"Saving…"
+      : (s==="local"||s==="saved")?"Saved on this device"
+      : s==="ro"?"Read-only" : "";
   }
   function scheduleSave(){
     if(readOnly) return;
@@ -587,30 +581,8 @@
       (a.isContentEditable || (a.tagName==="INPUT" && a.value!=="")));
   }
   function doSave(){
-    if(isEditing()){ saveTimer=setTimeout(doSave,1600); return; }  /* don't reload mid-edit */
-    var json=serialize();
-    capReady.then(function(cap){
-      if(!cap){ saveLocal(json); return; }
-      fetch(location.href).then(function(r){return r.text();}).then(function(src){
-        if(!STATE_RE.test(src)) throw {code:"invalid_content",message:"state block not found"};
-        var tag='<scr'+'ipt type="application/json" id="state">'+json+'</scr'+'ipt>';
-        try{ sessionStorage.setItem("fc-scroll",String(window.scrollY||0)); }catch(e){}
-        return cap.publish(src.replace(STATE_RE,tag));
-      }).then(function(){ retried=false; setStatus("saved"); })
-      .catch(function(e){
-        var code=e&&e.code;
-        if(code==="conflict"){ return; }                      /* view reloads to winner */
-        if(code==="not_writer"||code==="not_granted"||code==="not_declared"){
-          readOnly=true; setStatus("ro"); render(); return;
-        }
-        if(code==="rate_limited"){ saveTimer=setTimeout(doSave,9000); return; }
-        if(code==="upstream_error" && !retried){
-          retried=true;
-          saveTimer=setTimeout(doSave,1500+Math.random()*2000); return;
-        }
-        retried=false; saveLocal(json);
-      });
-    });
+    if(isEditing()){ saveTimer=setTimeout(doSave,1600); return; }
+    saveLocal(serialize());
   }
   function saveLocal(json){
     try{ localStorage.setItem("four-corners-state",json); setStatus("local"); }
