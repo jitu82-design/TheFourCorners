@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="A four-quadrant to-do list. Your tasks never leave your browser.">
 <title>The Four Corners</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600;1,9..144,700&family=Inter:wght@400..700&family=Space+Grotesk:wght@500;600;700&display=swap">
@@ -169,10 +168,49 @@
   .add-btn:hover{background:var(--ink);color:var(--bg)}
   body.ro .add-row{display:none}
 
+  /* ---------- archive ---------- */
+  .arch{display:none;margin-top:22px;background:var(--surface);border:1px solid var(--line);
+    border-radius:8px;padding:18px 20px 16px}
+  body.arch-open .arch{display:block}
+  .arch-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:4px}
+  .arch-head h2{font-family:'Fraunces',serif;font-style:italic;font-weight:700;font-size:1.22rem}
+  .arch-note{font-family:'Fraunces',serif;font-style:italic;color:var(--muted);
+    font-size:.92rem;margin:10px 2px 2px}
+  .arch-list{list-style:none;max-height:340px;overflow-y:auto;scrollbar-width:thin;
+    scrollbar-color:var(--line) transparent}
+  .arch-list::-webkit-scrollbar{width:8px}
+  .arch-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+  .arch-item{display:flex;align-items:center;gap:10px;padding:9px 2px;
+    border-bottom:1px dotted var(--line);flex-wrap:wrap}
+  .arch-corner{font-family:'Space Grotesk',sans-serif;font-size:.6rem;font-weight:600;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:2px 8px;flex:none}
+  .arch-title{flex:1;min-width:140px;line-height:1.35;overflow-wrap:anywhere}
+  .arch-when{font-family:'Space Grotesk',sans-serif;font-size:.64rem;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);flex:none;
+    font-variant-numeric:tabular-nums}
+  .arch-subs{font-family:'Fraunces',serif;font-style:italic;font-size:.84rem;
+    color:var(--muted);flex-basis:100%;margin-left:2px}
+  .arch-act{font-family:'Space Grotesk',sans-serif;font-size:.64rem;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:3px 10px;flex:none}
+  .arch-act:hover{border-color:var(--ink);color:var(--ink)}
+  .arch-act.danger:hover,.arch-act.confirming{border-color:var(--late);color:var(--late)}
+  .arch-foot{display:flex;justify-content:flex-end;margin-top:10px;padding-top:9px;
+    border-top:1px solid var(--line-soft)}
+  #archBtn .n{font-variant-numeric:tabular-nums}
   .empty-hint{font-family:'Fraunces',serif;font-style:italic;color:var(--muted);
     padding:16px 2px;font-size:.95rem}
 
   /* ---------- done ---------- */
+  .arch-filter{display:flex;gap:2px;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .arch-filter button{font-family:'Space Grotesk',sans-serif;font-size:.62rem;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:5px 12px}
+  .arch-filter button:hover{color:var(--ink)}
+  .arch-filter button.on{background:var(--ink);color:var(--bg)}
+  .arch-mark{font-size:.85rem;line-height:1;color:var(--muted);flex:none;width:12px;text-align:center}
+  .arch-item.was-done .arch-mark{color:var(--ink)}
   details.done{margin-top:8px;border-top:1px solid var(--line-soft);padding-top:6px}
   details.done summary{font-family:'Space Grotesk',sans-serif;font-size:.68rem;font-weight:600;
     letter-spacing:.13em;text-transform:uppercase;color:var(--muted);cursor:pointer;
@@ -193,7 +231,8 @@
       --late:#b3403c; --late-ink:#fff;
     }
     body{background:#fff !important;color:#000;padding:0;font-size:11.5px}
-    .controls,.add-row,.icon-btn,.handle,.sort-hint,.ro-note,.clear-done,.cal{display:none !important}
+    .controls,.add-row,.icon-btn,.handle,.sort-hint,.ro-note,.clear-done,.cal,
+    .arch{display:none !important}
     .tasks{max-height:none !important;overflow:visible !important;
       -webkit-mask-image:none !important;mask-image:none !important;padding-right:0 !important}
     .masthead{border-color:#000;padding-bottom:8px;margin-bottom:6px}
@@ -240,6 +279,7 @@
         <button id="sortManual" aria-pressed="false">Manual</button>
       </div>
       <button class="btn" id="themeBtn" aria-label="Switch between day and night mode">☾ Night</button>
+      <button class="btn" id="archBtn" aria-expanded="false">Archive</button>
       <button class="btn" id="printBtn">Print</button>
       <span id="saveState" aria-live="polite"></span>
     </div>
@@ -247,6 +287,7 @@
   <p class="ro-note">You're viewing a read-only copy — changes here won't be saved.</p>
   <p class="sort-hint" id="sortHint"></p>
   <main class="grid" id="grid"></main>
+  <section class="arch" id="arch" aria-label="Archive"></section>
 </div>
 
 <script type="application/json" id="state">{"v":1,"savedAt":0,"sortMode":"deadline","tasks":[]}</script>
@@ -255,6 +296,7 @@
   "use strict";
   var QUADS=[{k:"family",name:"Family"},{k:"personal",name:"Personal"},
              {k:"work",name:"Work"},{k:"dj",name:"DJ / Businesses"}];
+  var STATE_RE=/<script type="application\/json" id="state">[\s\S]*?<\/script>/;
 
   /* ---------- state ---------- */
   var state;
@@ -268,7 +310,14 @@
   if(!state.names||typeof state.names!=="object") state.names={};
   if(state.sortMode!=="manual") state.sortMode="deadline";
 
-  var readOnly=false, saveTimer=null;
+  var readOnly=false, saveTimer=null, retried=false;
+  var capReady=(function(){
+    try{
+      if(window.claude && typeof window.claude.use==="function")
+        return window.claude.use("artifact").catch(function(){return null;});
+    }catch(e){}
+    return Promise.resolve(null);
+  })();
 
   function uid(){ return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():("t"+Date.now()+Math.random().toString(36).slice(2,8)); }
   function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -314,14 +363,12 @@
     var ed=(!readOnly)?' contenteditable="true" spellcheck="false"':"";
     var html="";
     QUADS.forEach(function(q){
-      var open=state.tasks.filter(function(t){return t.q===q.k && !t.done;});
-      var done=state.tasks.filter(function(t){return t.q===q.k && t.done;});
+      var open=state.tasks.filter(function(t){return t.q===q.k && !t.done && !t.deleted;});
       if(state.sortMode!=="manual")
         open=open.slice().sort(function(a,b){
           var da=a.due||"9999", db=b.due||"9999";
           return da<db?-1:da>db?1:(a.created||0)-(b.created||0);
         });
-      done=done.slice().sort(function(a,b){return (b.doneAt||0)-(a.doneAt||0);});
 
       html+='<section class="q" data-q="'+q.k+'"><div class="q-head">'
           +'<h2 class="q-name" data-act="qname" data-qk="'+q.k+'"'+ed
@@ -342,17 +389,135 @@
           +'<button type="button" class="add-date'+(pd?" set":"")+'" data-adddate="'+q.k
           +'" aria-label="Choose deadline">'+(pd?chipLabel(pd):"Set date")+'</button>'
           +'<button class="add-btn" type="submit" aria-label="Add task">+</button></form>';
-      if(done.length){
-        html+='<details class="done"><summary>Done · '+done.length
-            +'<button type="button" class="clear-done" data-q="'+q.k+'">clear</button></summary><ul class="tasks">';
-        done.forEach(function(t){ html+=taskHtml(t,"",true); });
-        html+='</ul></details>';
-      }
       html+='</section>';
     });
     document.getElementById("grid").innerHTML=html;
     capLists();
+    renderArchive();
   }
+
+  /* ---------- archive: deleted tasks are kept, not destroyed ---------- */
+  var archFilter="all";                      /* all | done | deleted */
+  function isArchived(t){ return !!(t.done||t.deleted); }
+  function archStamp(t){ return t.deleted?(t.deletedAt||0):(t.doneAt||0); }
+  function archived(){
+    return state.tasks.filter(function(t){
+      if(!isArchived(t)) return false;
+      if(archFilter==="done") return !t.deleted;
+      if(archFilter==="deleted") return !!t.deleted;
+      return true;
+    }).slice().sort(function(a,b){ return archStamp(b)-archStamp(a); });
+  }
+  function whenLabel(ts){
+    if(!ts) return "";
+    var d=new Date(ts), t=new Date();
+    var sameDay=d.toDateString()===t.toDateString();
+    if(sameDay) return "today";
+    var y=new Date(t.getTime()-864e5);
+    if(d.toDateString()===y.toDateString()) return "yesterday";
+    return MONTHS[d.getMonth()]+" "+d.getDate();
+  }
+  function renderArchive(){
+    var list=archived(), box=document.getElementById("arch");
+    var total=state.tasks.filter(isArchived).length;
+    var nDone=state.tasks.filter(function(t){return t.done&&!t.deleted;}).length;
+    var nDel=state.tasks.filter(function(t){return t.deleted;}).length;
+    document.getElementById("archBtn").innerHTML=
+      "Archive"+(total?' <span class="n">\u00b7 '+total+'</span>':"");
+    var h='<div class="arch-head"><h2>Archive</h2>'
+      +'<div class="arch-filter" role="group" aria-label="Filter archive">'
+      +'<button type="button" data-filter="all"'+(archFilter==="all"?' class="on"':'')
+      +'>All \u00b7 '+total+'</button>'
+      +'<button type="button" data-filter="done"'+(archFilter==="done"?' class="on"':'')
+      +'>Completed \u00b7 '+nDone+'</button>'
+      +'<button type="button" data-filter="deleted"'+(archFilter==="deleted"?' class="on"':'')
+      +'>Deleted \u00b7 '+nDel+'</button></div></div>';
+    if(!list.length){
+      h+='<p class="arch-note">'
+        +(total?'Nothing here under this filter.'
+               :'Nothing archived yet. Tasks you finish or delete are kept here, '
+                +'and you can put any of them back.')+'</p>';
+    }else{
+      h+='<ul class="arch-list">';
+      list.forEach(function(t){
+        var subs=(t.subs||[]).length;
+        h+='<li class="arch-item'+(t.deleted?"":" was-done")+'" data-id="'+t.id+'">'
+          +'<span class="arch-corner">'+esc(qName(t.q))+'</span>'
+          +'<span class="arch-mark" aria-hidden="true">'+(t.deleted?"\u00d7":"\u2713")+'</span>'
+          +'<span class="arch-title">'+esc(t.title)+'</span>'
+          +'<span class="arch-when">'+(t.due?chipLabel(t.due)+" \u00b7 ":"")
+          +(t.deleted?"deleted ":"done ")+whenLabel(archStamp(t))+'</span>'
+          +(readOnly?"":'<button type="button" class="arch-act" data-arch="restore">Restore</button>'
+            +'<button type="button" class="arch-act danger" data-arch="purge">Delete forever</button>')
+          +(subs?'<span class="arch-subs">'+subs+' sub-task'+(subs>1?"s":"")
+            +' kept with it</span>':"")
+          +'</li>';
+      });
+      h+='</ul>';
+      if(!readOnly)
+        h+='<div class="arch-foot"><button type="button" class="arch-act danger" '
+          +'data-arch="purgeall">'
+          +(archFilter==="all"?"Empty archive"
+            :archFilter==="done"?"Delete all completed":"Delete all deleted")
+          +'</button></div>';
+    }
+    box.innerHTML=h;
+  }
+
+  /* two-step confirm so nothing is destroyed on a single click */
+  var confirmTimer=null;
+  function armConfirm(btn,run){
+    if(btn.classList.contains("confirming")){
+      clearTimeout(confirmTimer); run(); return;
+    }
+    document.querySelectorAll(".arch-act.confirming").forEach(function(o){
+      o.classList.remove("confirming"); o.textContent=o.dataset.label||o.textContent;
+    });
+    btn.dataset.label=btn.textContent;
+    btn.classList.add("confirming"); btn.textContent="Sure?";
+    clearTimeout(confirmTimer);
+    confirmTimer=setTimeout(function(){
+      if(btn.isConnected){ btn.classList.remove("confirming"); btn.textContent=btn.dataset.label; }
+    },4000);
+  }
+
+  document.getElementById("arch").addEventListener("click",function(ev){
+    var f0=ev.target.closest("[data-filter]");
+    if(f0){ archFilter=f0.dataset.filter; renderArchive(); return; }
+    var b=ev.target.closest("[data-arch]"); if(!b||readOnly) return;
+    var act=b.dataset.arch;
+    if(act==="purgeall"){
+      armConfirm(b,function(){
+        var keep=archFilter==="all"?function(t){return !isArchived(t);}
+              :archFilter==="done"?function(t){return !(t.done&&!t.deleted);}
+              :function(t){return !t.deleted;};
+        state.tasks=state.tasks.filter(keep);
+        render(); scheduleSave();
+      });
+      return;
+    }
+    var f=ev.target.closest("[data-filter]");
+    if(f){ archFilter=f.dataset.filter; renderArchive(); return; }
+    var li=b.closest(".arch-item"); if(!li) return;
+    var id=li.dataset.id, t=findTask(id); if(!t) return;
+    if(act==="restore"){
+      delete t.deleted; delete t.deletedAt;
+      t.done=false; t.doneAt=null;            /* back to its corner, unchecked */
+      render(); scheduleSave();
+    }else if(act==="purge"){
+      armConfirm(b,function(){
+        state.tasks=state.tasks.filter(function(x){return x.id!==id;});
+        render(); scheduleSave();
+      });
+    }
+  });
+
+  document.getElementById("archBtn").addEventListener("click",function(){
+    var open=document.body.classList.toggle("arch-open");
+    this.setAttribute("aria-expanded",open?"true":"false");
+    if(open) document.getElementById("arch").scrollIntoView({block:"nearest",
+      behavior:(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)?"auto":"smooth"});
+  });
 
   /* ---------- show at most MAX_OPEN tasks, scroll the rest ---------- */
   function capLists(){
@@ -403,9 +568,8 @@
   /* ---------- saving ---------- */
   function setStatus(s){
     var el=document.getElementById("saveState");
-    el.textContent = s==="saving"?"Saving…"
-      : (s==="local"||s==="saved")?"Saved on this device"
-      : s==="ro"?"Read-only" : "";
+    el.textContent = s==="saving"?"Saving…" : s==="saved"?"Saved ✓"
+      : s==="local"?"Saved on this device" : s==="ro"?"Read-only" : "";
   }
   function scheduleSave(){
     if(readOnly) return;
@@ -423,8 +587,30 @@
       (a.isContentEditable || (a.tagName==="INPUT" && a.value!=="")));
   }
   function doSave(){
-    if(isEditing()){ saveTimer=setTimeout(doSave,1600); return; }
-    saveLocal(serialize());
+    if(isEditing()){ saveTimer=setTimeout(doSave,1600); return; }  /* don't reload mid-edit */
+    var json=serialize();
+    capReady.then(function(cap){
+      if(!cap){ saveLocal(json); return; }
+      fetch(location.href).then(function(r){return r.text();}).then(function(src){
+        if(!STATE_RE.test(src)) throw {code:"invalid_content",message:"state block not found"};
+        var tag='<scr'+'ipt type="application/json" id="state">'+json+'</scr'+'ipt>';
+        try{ sessionStorage.setItem("fc-scroll",String(window.scrollY||0)); }catch(e){}
+        return cap.publish(src.replace(STATE_RE,tag));
+      }).then(function(){ retried=false; setStatus("saved"); })
+      .catch(function(e){
+        var code=e&&e.code;
+        if(code==="conflict"){ return; }                      /* view reloads to winner */
+        if(code==="not_writer"||code==="not_granted"||code==="not_declared"){
+          readOnly=true; setStatus("ro"); render(); return;
+        }
+        if(code==="rate_limited"){ saveTimer=setTimeout(doSave,9000); return; }
+        if(code==="upstream_error" && !retried){
+          retried=true;
+          saveTimer=setTimeout(doSave,1500+Math.random()*2000); return;
+        }
+        retried=false; saveLocal(json);
+      });
+    });
   }
   function saveLocal(json){
     try{ localStorage.setItem("four-corners-state",json); setStatus("local"); }
@@ -465,25 +651,18 @@
   }
 
   grid.addEventListener("click",function(ev){
-    var b=ev.target.closest("[data-act],[data-q].clear-done"); if(!b) return;
+    var b=ev.target.closest("[data-act]"); if(!b) return;
     var act=b.dataset.act;
-    if(b.classList.contains("clear-done")){
-      ev.preventDefault();
-      if(readOnly) return;
-      var q=b.dataset.q;
-      state.tasks=state.tasks.filter(function(t){return !(t.q===q&&t.done);});
-      render(); scheduleSave(); return;
-    }
     var li=b.closest(".task"); if(!li) return;
     var t=findTask(li.dataset.id); if(!t) return;
     if(readOnly && act!=="none") { if(act==="toggle"||act==="del"||act==="addsub"||act==="subtoggle"||act==="subdel"||act==="date") return; }
 
     if(act==="toggle"){
-      t.done=!t.done; t.doneAt=t.done?Date.now():null;
+      t.done=!t.done; t.doneAt=t.done?Date.now():null;   /* completing files it in the archive */
       render(); scheduleSave();
     }
     else if(act==="del"){
-      state.tasks=state.tasks.filter(function(x){return x.id!==t.id;});
+      t.deleted=true; t.deletedAt=Date.now();   /* goes to the archive, not away */
       render(); scheduleSave();
     }
     else if(act==="addsub"){
@@ -734,12 +913,13 @@
       /* freeze current deadline order as the starting manual order */
       var ordered=[];
       QUADS.forEach(function(q){
-        state.tasks.filter(function(t){return t.q===q.k&&!t.done;})
+        state.tasks.filter(function(t){return t.q===q.k&&!t.done&&!t.deleted;})
           .sort(function(a,b){var da=a.due||"9999",db=b.due||"9999";
             return da<db?-1:da>db?1:(a.created||0)-(b.created||0);})
           .forEach(function(t){ordered.push(t);});
       });
-      state.tasks.filter(function(t){return t.done;}).forEach(function(t){ordered.push(t);});
+      state.tasks.filter(function(t){return t.done&&!t.deleted;}).forEach(function(t){ordered.push(t);});
+      state.tasks.filter(function(t){return t.deleted;}).forEach(function(t){ordered.push(t);});
       state.tasks=ordered;
       state.sortMode="manual"; render(); scheduleSave();
     }
